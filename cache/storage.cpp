@@ -12,12 +12,13 @@ class Storage : public BaseStorage<Key_t, Value_t> {
    public:
     using key_type = Key_t;
     using value_type = Value_t;
+    Storage() : m_store() {}
 
     std::optional<Value_t> get(const Key_t& key) const {
         try {
             return m_store.at(key);
         } catch (const std::exception& e) {
-            std::cerr << e.what() << '\n';
+            std::cerr << "[Storage.get] " << e.what() << '\n';
             return std::nullopt;
         }
         return std::nullopt;

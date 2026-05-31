@@ -24,13 +24,15 @@ class LRUEvictionPolicy : public BaseEvictionPolicy<Key_t> {
     LRUAccessNode<Key_t>* tail = nullptr;
 
    public:
-    LRUEvictionPolicy() {
-        head = new LRUAccessNode<Key_t>;
-        tail = new LRUAccessNode<Key_t>;
-
+    LRUEvictionPolicy()
+        : key2node(), head(new LRUAccessNode<Key_t>), tail(new LRUAccessNode<Key_t>) {
         head->next = tail;
         tail->prev = head;
     }
+
+    LRUEvictionPolicy(const LRUEvictionPolicy&) = delete;
+    LRUEvictionPolicy& operator=(const LRUEvictionPolicy&) = delete;
+
     void on_remove(const Key_t& key) {
         try {
             auto node = this->key2node.at(key);
@@ -41,10 +43,12 @@ class LRUEvictionPolicy : public BaseEvictionPolicy<Key_t> {
             next->prev = prev;
 
             delete node;
+            this->key2node.erase(key);
         } catch (...) {
             std::cout << "[on_remove] Key not found bro. Not inserted before!" << std::endl;
         }
     }
+
     void on_add(const Key_t& key) {
         auto to_add = new LRUAccessNode<Key_t>(key);
 
@@ -52,8 +56,10 @@ class LRUEvictionPolicy : public BaseEvictionPolicy<Key_t> {
         head->next = to_add;
         to_add->prev = head;
         to_add->next = next;
+        next->prev = to_add;
         this->key2node[key] = to_add;
     }
+
     void on_access(const Key_t& key) {
         try {
             auto node = this->key2node.at(key);
@@ -64,11 +70,14 @@ class LRUEvictionPolicy : public BaseEvictionPolicy<Key_t> {
             next->prev = prev;
             auto hnext = head->next;
             head->next = node;
+            node->prev = head;
+            node->next = hnext;
             hnext->prev = node;
         } catch (...) {
             std::cout << "[on_access] Key not found bro. Not inserted before!" << std::endl;
         }
     }
+
     Key_t evict_candidate() {
         return head->next->key;
     }
